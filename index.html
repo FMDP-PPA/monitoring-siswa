@@ -321,15 +321,13 @@
       let totalJamBulanIni = 0;
       let totalTarBulanIni = 0;
 
-      // 1. RE-STABILISASI PARSING TANGGAL KEBAL FORMAT
+      // 1. RE-STABILISASI PARSING TANGGAL MENGGUNAKAN TIMEZONE LOCAL BROWSER (SINKRON 100%)
       function parsingTanggalGSheets(tglRaw) {
         if (!tglRaw) return null;
-        if (tglRaw instanceof Date && !isNaN(tglRaw)) {
-          if (tglRaw.getFullYear() === 1899) return null;
-          return { hari: tglRaw.getDate(), bulan: tglRaw.getMonth(), tahun: tglRaw.getFullYear() };
-        }
+        
+        // Cek jika teks mengandung format Indonesia tradisional miring (d/m/yyyy) terlebih dahulu sebelum dikonversi ISO
         let tglStr = tglRaw.toString().trim();
-        if (tglStr === "" || tglStr.toLowerCase().includes("null") || tglStr.toLowerCase().includes("undefined") || tglStr.includes("1899")) return null;
+        if (tglStr === "" || tglStr.toLowerCase().includes("null") || tglStr.toLowerCase().includes("undefined")) return null;
 
         if (tglStr.includes('/')) {
           const p = tglStr.split('/');
@@ -337,42 +335,35 @@
             let d1 = parseInt(p[0]);
             let d2 = parseInt(p[1]);
             let d3 = parseInt(p[2]);
-            if (p[0].length === 4) {
+            if (p[0].length === 4) { // YYYY/MM/DD
               return { hari: d3, bulan: d2 - 1, tahun: d1 };
-            } else {
+            } else { // DD/MM/YYYY
               return { hari: d1, bulan: d2 - 1, tahun: d3 > 2000 ? d3 : 2000 + d3 };
             }
           }
         }
 
-        if (tglStr.includes('-')) {
-          const bagianKiri = tglStr.split('T')[0];
-          const p = bagianKiri.split('-');
-          if (p.length === 3) {
-            return { hari: parseInt(p[2]), bulan: parseInt(p[1]) - 1, tahun: parseInt(p[0]) };
-          }
-        }
-        
-        let ujiDate = new Date(tglStr);
+        // Jika berbentuk objek Date atau string ISO bertanda 'T' (Bawaan JSON Google Apps Script)
+        let ujiDate = new Date(tglRaw);
         if (!isNaN(ujiDate) && ujiDate.getFullYear() > 1900) {
+          // Menggunakan timezone local browser agar tidak berkurang 1 hari karena bias UTC
           return { hari: ujiDate.getDate(), bulan: ujiDate.getMonth(), tahun: ujiDate.getFullYear() };
         }
         return null;
       }
 
-      // 2. LOOP DATA DAR SISWA DENGAN CLEANSING TEKS "MENIT" DAN PENGAMAN SEJAJAR
+      // 2. LOOP DATA DAR SISWA
       rowsDARSiswa.forEach(row => {
         const keyDurasi = Object.keys(row).find(k => k.trim().toUpperCase() === 'DURASI');
         const keyTanggal = Object.keys(row).find(k => k.trim().toUpperCase() === 'TANGGAL');
         
         let durasiJam = 0;
         if (keyDurasi && row[keyDurasi] !== null && row[keyDurasi] !== undefined) {
-          // Menghapus kata "menit" maupun spasi agar tersisa angka mentah saja
           let cleanStr = row[keyDurasi].toString().toLowerCase().replace(/menit/g, '').trim();
           let nilaiMenit = parseFloat(cleanStr);
           
           if (!isNaN(nilaiMenit) && nilaiMenit > 0) {
-            durasiJam = nilaiMenit / 60; // Mengubah Menit ke Jam desimal murni
+            durasiJam = nilaiMenit / 60;
           }
         }
         
