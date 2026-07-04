@@ -166,7 +166,7 @@
         <!-- SEKSI MONITORING TANGGALAN DAR -->
         <div class="mt-3">
           <h6 class="fw-bold text-dark mb-1" id="title-kalender">📆 KELENGKAPAN DAR HARIAN (BULAN BERJALAN)</h6>
-          <p class="text-muted small mb-3">Hari bertanda centang (<span class="text-success fw-bold">✓</span>) menandakan siswa telah mengumpulkan minimal total 10 jam DAR.</p>
+          <p class="text-muted small mb-3">Hari bertanda centang (<span class="text-success fw-bold">✓</span>) menandakan siswa telah memenuhi target minimal 10 jam kerja.</p>
           <div class="calendar-container" id="container-kalender">
             <!-- Diisi otomatis via JS -->
           </div>
@@ -325,7 +325,6 @@
         if (!tglRaw) return null;
 
         if (tglRaw instanceof Date && !isNaN(tglRaw)) {
-          // Proteksi: Jika tahun objek bernilai 1899, berarti ini format JAM MURNI dari GSheets, bukan tanggal entri DAR.
           if (tglRaw.getFullYear() === 1899) return null;
           return { hari: tglRaw.getDate(), bulan: tglRaw.getMonth(), tahun: tglRaw.getFullYear() };
         }
@@ -364,19 +363,23 @@
       }
 
       rowsDARSiswa.forEach(row => {
-        // PERBAIKAN UTAMA: Mengunci pencarian kolom durasi & memblokir kolom "Jam Mulai / Selesai"
-        const keyDurasi = Object.keys(row).find(k => {
-          const kunci = k.toLowerCase();
-          return (kunci.includes('durasi') || kunci.includes('jam') || kunci.includes('total')) && 
-                 !kunci.includes('mulai') && 
-                 !kunci.includes('selesai');
-        });
-        
+        // AMBIL DARI DURASI: Mengunci nama kolom eksklusif ke kata "durasi"
+        const keyDurasi = Object.keys(row).find(k => k.toLowerCase().trim() === 'durasi');
         const keyTanggal = Object.keys(row).find(k => k.toLowerCase().includes('tanggal'));
         
-        let durasi = parseFloat(row[keyDurasi]) || 0;
-        let tglRaw = row[keyTanggal];
+        let durasiRaw = row[keyDurasi];
+        let durasi = 0;
 
+        // Proteksi ekstra: Pastikan yang dibaca bukan format jam menit berekor string panjang
+        if (durasiRaw !== null && durasiRaw !== undefined) {
+          let parsed = parseFloat(durasiRaw);
+          if (!isNaN(parsed)) {
+            // Jika angka di atas 24, kemungkinan besar JavaScript salah membaca serial serial tanggal Google Sheets
+            durasi = parsed > 24 ? 0 : parsed;
+          }
+        }
+        
+        let tglRaw = row[keyTanggal];
         const dataTgl = parsingTanggalGSheets(tglRaw);
         if (dataTgl) {
           if (dataTgl.bulan === bulanSekarang && dataTgl.tahun === tahunSekarang) {
@@ -405,6 +408,7 @@
         }
       });
 
+      // ATURAN BARU: Pembagi daily adalah 10, dan monthly adalah 10 dikalikan jumlah hari di bulan itu
       const targetDarDaily = 10;
       const targetDarMonthly = 10 * jumlahHariBulanIni;
       const targetTarMonthly = 2;
@@ -437,7 +441,7 @@
 
       for(let i = 1; i <= totalHari; i++) {
         let totalJamMasuk = mapJam[i] || 0;
-        let isComplete = totalJamMasuk >= 10;
+        let isComplete = totalJamMasuk >= 10; // Aturan: Centang jika minimal 10 jam kerja terpenuhi
         
         let dayCard = document.createElement('div');
         dayCard.className = `calendar-day ${isComplete ? 'completed' : ''}`;
@@ -446,7 +450,7 @@
           dayCard.innerHTML = `
             <span class="day-num">${i}</span>
             <span class="badge-check">✓</span>
-            <span class="day-status text-success">${totalJamMasuk.toFixed(0)} Jm</span>
+            <span class="day-status text-success">${totalJamMasuk.toFixed(1)} Jm</span>
           `;
         } else {
           dayCard.innerHTML = `
@@ -459,7 +463,6 @@
       }
     }
 
-    // PERBAIKAN: Mengubah tampilan 30/12/1899 pada tabel menjadi Jam Digital Menit (HH:mm)
     function formatNilaiSel(nilai) {
       if (nilai === null || nilai === undefined) return '-';
       if (typeof nilai === 'object') {
