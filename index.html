@@ -3,62 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Monitoring Ketercapaian Siswa</title>
+  <title>Dashboard Monitoring Ketercapaian Siswa - FMDP PPA</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     :root {
-      --primary-color: #0f172a; /* Deep Navy sesuai tema aplikasi utama */
-      --accent-color: #0284c7;
+      --ppa-navy: #0f172a; /* Deep Navy Corporate */
+      --ppa-red: #dc2626;  /* PPA Corporate Red */
       --bg-light: #f8fafc;
     }
     body { background-color: var(--bg-light); font-family: system-ui, -apple-system, sans-serif; }
-    .navbar-brand-custom { background-color: var(--primary-color); color: white; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .card-metric { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; margin-bottom: 25px; overflow: hidden; }
-    .card-header-custom { background-color: var(--primary-color); color: white; font-weight: 600; padding: 15px 20px; border-bottom: none; }
-    .table-responsive { max-height: 400px; overflow-y: auto; }
-    .table thead th { position: sticky; top: 0; background-color: #1e293b !important; color: white; z-index: 1; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    
+    /* Header Bertema Logo PPD/PPA */
+    .navbar-brand-custom { 
+      background: linear-gradient(135deg, var(--ppa-navy) 70%, var(--ppa-red) 100%);
+      color: white; 
+      padding: 25px 20px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+      border-bottom: 5px solid var(--ppa-red);
+    }
+    
+    /* Card Bertema */
+    .card-metric { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; margin-bottom: 30px; overflow: hidden; }
+    .card-header-custom { 
+      background-color: var(--ppa-navy); 
+      color: white; 
+      font-weight: 700; 
+      padding: 15px 20px; 
+      border-bottom: 3px solid var(--ppa-red); 
+      font-size: 1.1rem;
+      letter-spacing: 0.03em;
+    }
+    
+    /* Tombol Refresh bertema Red PPA */
+    .btn-ppa-red {
+      background-color: var(--ppa-red);
+      color: white;
+      font-weight: bold;
+      border: none;
+      transition: background 0.2s;
+    }
+    .btn-ppa-red:hover {
+      background-color: #b91c1c;
+      color: white;
+    }
+
+    /* Tabel Lebar Penuh & Header Tetap Berwarna Gelap */
+    .table-responsive { max-height: 450px; overflow-y: auto; }
+    .table thead th { 
+      position: sticky; 
+      top: 0; 
+      background-color: #1e293b !important; 
+      color: white; 
+      z-index: 1; 
+      font-size: 0.85rem; 
+      text-transform: uppercase; 
+      white-space: nowrap;
+    }
+    .table tbody td { white-space: nowrap; }
     .loading-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; }
-    .form-select-lg { border-color: #cbd5e1; font-size: 1.1rem; }
-    .form-select-lg:focus { border-color: var(--accent-color); box-shadow: 0 0 0 0.25rem rgba(2, 132, 199, 0.25); }
   </style>
 </head>
 <body>
 
-  <!-- HEADER MONITORING -->
+  <!-- HEADER MONITORING DENGAN IDENTITAS LOGO PPD -->
   <nav class="navbar-brand-custom text-center mb-4">
-    <h2 class="h4 mb-1 fw-bold">🎯 FMDP MONITORING HUB</h2>
-    <p class="small mb-0 text-white-50">Data Ketercapaian Siswa Terintegrasi Spreadsheet & GitHub</p>
+    <h2 class="h3 mb-1 fw-bold">🎯 FMDP MONITORING HUB</h2>
+    <p class="small mb-0 text-white-50 fw-medium">Sistem Pemantauan Ketercapaian Siswa Terintegrasi PPA/PPD</p>
   </nav>
 
   <div class="container-fluid px-4">
     
-    <!-- PANEL FILTER SISWA -->
+    <!-- PANEL FILTER SISWA (LEBAR PENUH) -->
     <div class="card card-metric p-4 mb-4">
       <div class="row align-items-center">
-        <div class="col-md-7 col-12 mb-3 mb-md-0">
+        <div class="col-md-8 col-12 mb-3 mb-md-0">
           <label class="form-label fw-bold text-secondary mb-2">Silakan Pilih Nama Siswa untuk Memulai Monitoring:</label>
           <select id="selectSiswa" class="form-select form-select-lg" onchange="filterDataSiswa()" disabled>
             <option value="">-- Memuat list nama siswa, mohon tunggu... --</option>
           </select>
         </div>
-        <div class="col-md-5 col-12 text-md-end">
-          <button class="btn btn-outline-dark btn-lg fw-bold px-4" onclick="muatDataUtama()">🔄 Refresh Data Spreadsheet</button>
+        <div class="col-md-4 col-12 text-md-end">
+          <button class="btn btn-ppa-red btn-lg px-4 w-100 w-md-auto" onclick="muatDataUtama()">🔄 Refresh Data Spreadsheet</button>
         </div>
       </div>
     </div>
 
     <!-- LOADING STATE -->
     <div id="loading" class="loading-overlay">
-      <div class="spinner-border text-dark" style="width: 3rem; height: 3rem;" role="status"></div>
-      <p class="text-muted mt-3 fw-medium">Menarik data dari sistem backend Google Sheets...</p>
+      <div class="spinner-border text-danger" style="width: 3rem; height: 3rem;" role="status"></div>
+      <p class="text-muted mt-3 fw-medium">Menghubungkan ke server data Google Sheets...</p>
     </div>
 
-    <!-- UTAMA: DASHBOARD MONITORING KETERCAPAIAN -->
+    <!-- UTAMA: MONITORING HUB (LAYOUT MENURUN KE BAWAH) -->
     <div id="monitoring-hub" class="d-none">
       <div class="row">
         
-        <!-- CARD 1: Daily Activity (DAR) -->
-        <div class="col-xl-6 col-12">
+        <!-- ROW 1: Daily Activity (DAR) -->
+        <div class="col-12">
           <div class="card card-metric">
             <div class="card-header card-header-custom">📋 Ketercapaian Daily Activity (DAR)</div>
             <div class="card-body p-0 table-responsive">
@@ -70,10 +111,10 @@
           </div>
         </div>
 
-        <!-- CARD 2: Technical Analysis (TAR) -->
-        <div class="col-xl-6 col-12">
+        <!-- ROW 2: Technical Analysis (TAR) -->
+        <div class="col-12">
           <div class="card card-metric">
-            <div class="card-header card-header-custom">📊 Technical Analysis (TAR)</div>
+            <div class="card-header card-header-custom"> Bars Technical Analysis (TAR)</div>
             <div class="card-body p-0 table-responsive">
               <table class="table table-striped table-hover mb-0 align-middle">
                 <thead id="th-tech"><tr><th>Memuat...</th></tr></thead>
@@ -83,8 +124,8 @@
           </div>
         </div>
 
-        <!-- CARD 3: History Mentoring -->
-        <div class="col-xl-6 col-12">
+        <!-- ROW 3: History Mentoring -->
+        <div class="col-12">
           <div class="card card-metric">
             <div class="card-header card-header-custom">🤝 History Mentoring</div>
             <div class="card-body p-0 table-responsive">
@@ -96,8 +137,8 @@
           </div>
         </div>
 
-        <!-- CARD 4: History Training -->
-        <div class="col-xl-6 col-12">
+        <!-- ROW 4: History Training -->
+        <div class="col-12">
           <div class="card card-metric">
             <div class="card-header card-header-custom">💡 History Training</div>
             <div class="card-body p-0 table-responsive">
@@ -152,7 +193,6 @@
       
       if(users.length === 0) return;
       
-      // SOLUSI: Secara spesifik mencari properti/kolom bernama 'Nama' agar bukan NRP yang keluar di dropdown
       const semuaKolom = Object.keys(users[0]);
       const kolomNama = semuaKolom.find(k => k.toLowerCase() === 'nama' || k.toLowerCase() === 'nama siswa') || semuaKolom[0];
 
@@ -189,11 +229,29 @@
         return;
       }
 
-      // Filter & Render masing-masing tabel menggunakan nama siswa terpilih
       prosesFilterDanRender('tb-daily', MASTER_DATA.DailyActivity, namaTerpilih);
       prosesFilterDanRender('tb-tech', MASTER_DATA.TechnicalAnalysis, namaTerpilih);
       prosesFilterDanRender('tb-mentoring', MASTER_DATA.Mentoring, namaTerpilih);
       prosesFilterDanRender('tb-training', MASTER_DATA.Training, namaTerpilih);
+    }
+
+    // Fungsi Pengonversi & Pembersih Data Tanggal/Waktu agar terbaca normal
+    function formatNilaiSel(nilai) {
+      if (nilai === null || nilai === undefined) return '-';
+      
+      // Jika mendeteksi struktur objek bawaan Google (seperti penanggalan mentah)
+      if (typeof nilai === 'object') {
+        if (nilai.date) return new Date(nilai.date).toLocaleDateString('id-ID');
+        return JSON.stringify(nilai);
+      }
+      
+      // Jika string berupa format ISO Date atau Timestamp Google JSON
+      if (typeof nilai === 'string' && nilai.includes('T') && !isNaN(Date.parse(nilai))) {
+        const d = new Date(nilai);
+        return d.toLocaleDateString('id-ID');
+      }
+      
+      return nilai;
     }
 
     function prosesFilterDanRender(tbodyId, objekTab, namaSiswa) {
@@ -205,7 +263,6 @@
         return;
       }
 
-      // SOLUSI MULTI-KOLOM: Mendeteksi dinamis nama kolom relasi (bisa 'Nama', 'Nama Analyst', atau 'Nama Karyawan')
       const semuaKolom = Object.keys(objekTab.rows[0]);
       const keyNama = semuaKolom.find(k => 
         k.toLowerCase() === 'nama' || 
@@ -214,7 +271,6 @@
         k.toLowerCase().includes('nama')
       ) || semuaKolom[0];
 
-      // Memfilter baris data yang nilai nama kolomnya COCOK dengan nama siswa terpilih di dropdown
       const dataTersaring = objekTab.rows.filter(row => {
         if (!row[keyNama]) return false;
         return row[keyNama].toString().trim().toLowerCase() === namaSiswa.toString().trim().toLowerCase();
@@ -228,7 +284,9 @@
       dataTersaring.forEach(row => {
         let htmlRow = "<tr>";
         objekTab.headers.forEach(h => {
-          htmlRow += `<td class="p-3 small text-nowrap">${row[h] !== undefined ? row[h] : '-'}</td>`;
+          // Menggunakan pembersih format data (formatNilaiSel) agar waktu & tanggal bocor terekstrak dengan rapi
+          let cellValue = formatNilaiSel(row[h]);
+          htmlRow += `<td class="p-3 small">${cellValue}</td>`;
         });
         htmlRow += "</tr>";
         tbody.innerHTML += htmlRow;
