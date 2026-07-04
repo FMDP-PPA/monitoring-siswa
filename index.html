@@ -321,7 +321,7 @@
       let totalJamBulanIni = 0;
       let totalTarBulanIni = 0;
 
-      // 1. PARSING TANGGAL GSHEETS
+      // 1. RE-STABILISASI PARSING TANGGAL (Mengatasi Isu String Sinkronisasi Tanggal 3)
       function parsingTanggalGSheets(tglRaw) {
         if (!tglRaw) return null;
         if (tglRaw instanceof Date && !isNaN(tglRaw)) {
@@ -331,26 +331,29 @@
         let tglStr = tglRaw.toString().trim();
         if (tglStr === "" || tglStr.toLowerCase().includes("null") || tglStr.toLowerCase().includes("undefined") || tglStr.includes("1899")) return null;
 
+        if (tglStr.includes('/')) {
+          const p = tglStr.split('/');
+          if (p.length === 3) {
+            let d1 = parseInt(p[0]);
+            let d2 = parseInt(p[1]);
+            let d3 = parseInt(p[2]);
+            // Deteksi format YYYY/MM/DD atau DD/MM/YYYY
+            if (p[0].length === 4) {
+              return { hari: d3, bulan: d2 - 1, tahun: d1 };
+            } else {
+              return { hari: d1, bulan: d2 - 1, tahun: d3 > 2000 ? d3 : 2000 + d3 };
+            }
+          }
+        }
+
         if (tglStr.includes('-')) {
           const bagianKiri = tglStr.split('T')[0];
           const p = bagianKiri.split('-');
           if (p.length === 3) {
-            let thn = parseInt(p[0]);
-            let bln = parseInt(p[1]) - 1;
-            let tgl = parseInt(p[2]);
-            if (thn > 1900) return { hari: tgl, bulan: bln, tahun: thn };
+            return { hari: parseInt(p[2]), bulan: parseInt(p[1]) - 1, tahun: parseInt(p[0]) };
           }
         }
-        if (tglStr.includes('/')) {
-          const p = tglStr.split('/');
-          if (p.length === 3) {
-            if (p[0].length === 4) {
-              return { hari: parseInt(p[2]), bulan: parseInt(p[1]) - 1, tahun: parseInt(p[0]) };
-            } else {
-              return { hari: parseInt(p[0]), bulan: parseInt(p[1]) - 1, tahun: parseInt(p[2]) };
-            }
-          }
-        }
+        
         let ujiDate = new Date(tglStr);
         if (!isNaN(ujiDate) && ujiDate.getFullYear() > 1900) {
           return { hari: ujiDate.getDate(), bulan: ujiDate.getMonth(), tahun: ujiDate.getFullYear() };
@@ -358,53 +361,16 @@
         return null;
       }
 
-      // 2. PARSING JAM (Mendukung format titik 06.00 / 17.00)
-      function parsingDurasiGSheets(durasiRaw) {
-        if (durasiRaw === null || durasiRaw === undefined) return 0;
-        
-        if (typeof durasiRaw === 'object' && durasiRaw.date) {
-          let d = new Date(durasiRaw.date);
-          return d.getHours() + (d.getMinutes() / 60);
-        }
-        
-        let str = durasiRaw.toString().trim();
-        if (str === "") return 0;
-
-        if (str.includes('1899')) {
-          let d = new Date(str);
-          if (!isNaN(d)) { return d.getHours() + (d.getMinutes() / 60); }
-        }
-
-        // Deteksi format waktu string (misal: "06:00" atau "17.00")
-        if (str.includes(':') || str.includes('.')) {
-          const pemisah = str.includes(':') ? ':' : '.';
-          const bagian = str.split(pemisah);
-          const jam = parseFloat(bagian[0]) || 0;
-          const menit = parseFloat(bagian[1]) || 0;
-          if (jam < 24) {
-            return jam + (menit / 60);
-          }
-        }
-
-        let angkaMurni = parseFloat(str);
-        if (!isNaN(angkaMurni)) { return angkaMurni; }
-        return 0;
-      }
-
-      // 3. LOOP DATA DAR SISWA (Kalkulasi Otomatis Selesai - Mulai)
+      // LOOP DATA DAR SISWA (Membaca Durasi Menit Diubah Ke Jam)
       rowsDARSiswa.forEach(row => {
+        const keyDurasi = Object.keys(row).find(k => k.toLowerCase().trim() === 'durasi');
         const keyTanggal = Object.keys(row).find(k => k.toLowerCase().includes('tanggal'));
-        const keyJamMulai = Object.keys(row).find(k => k.toLowerCase().includes('mulai'));
-        const keyJamSelesai = Object.keys(row).find(k => k.toLowerCase().includes('selesai'));
         
-        let durasi = 0;
-
-        if (keyJamMulai && keyJamSelesai) {
-          let jamMulai = parsingDurasiGSheets(row[keyJamMulai]);
-          let jamSelesai = parsingDurasiGSheets(row[keyJamSelesai]);
-          
-          if (jamSelesai > jamMulai) {
-            durasi = jamSelesai - jamMulai;
+        let durasiJam = 0;
+        if (keyDurasi && row[keyDurasi] !== null && row[keyDurasi] !== undefined) {
+          let nilaiMenit = parseFloat(row[keyDurasi].toString().trim());
+          if (!isNaN(nilaiMenit) && nilaiMenit > 0) {
+            durasiJam = nilaiMenit / 60; // Konversi MENIT ke JAM
           }
         }
         
@@ -412,20 +378,20 @@
         const dataTgl = parsingTanggalGSheets(tglRaw);
         if (dataTgl) {
           if (dataTgl.bulan === bulanSekarang && dataTgl.tahun === tahunSekarang) {
-            totalJamBulanIni += durasi;
+            totalJamBulanIni += durasiJam;
             
             if(mapJamPerHari[dataTgl.hari] !== undefined) {
-              mapJamPerHari[dataTgl.hari] += durasi;
+              mapJamPerHari[dataTgl.hari] += durasiJam;
             }
 
             if (dataTgl.hari === tglSekarang) { 
-              totalJamHariIni += durasi; 
+              totalJamHariIni += durasiJam; 
             }
           }
         }
       });
 
-      // 4. LOOP DATA TAR SISWA
+      // LOOP DATA TAR SISWA
       rowsTARSiswa.forEach(row => {
         const keyTanggal = Object.keys(row).find(k => k.toLowerCase().includes('tanggal') || k.toLowerCase().includes('analisis'));
         let tglRaw = row[keyTanggal];
@@ -438,7 +404,6 @@
         }
       });
 
-      // TARGET ATURAN BARU
       const targetDarDaily = 10;
       const targetDarMonthly = 10 * jumlahHariBulanIni;
       const targetTarMonthly = 2;
