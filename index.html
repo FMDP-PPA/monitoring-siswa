@@ -6,95 +6,104 @@
   <title>Dashboard Monitoring Ketercapaian Siswa</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background-color: #f1f3f7; font-family: system-ui, sans-serif; }
-    .navbar-brand-custom { background-color: #1e293b; color: white; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    .card-metric { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); background: white; margin-bottom: 25px; }
-    .card-header-custom { background-color: #0f172a; color: white; border-top-left-radius: 12px !important; border-top-right-radius: 12px !important; font-weight: 600; }
-    .loading-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; }
+    :root {
+      --primary-color: #0f172a; /* Deep Navy sesuai tema aplikasi utama */
+      --accent-color: #0284c7;
+      --bg-light: #f8fafc;
+    }
+    body { background-color: var(--bg-light); font-family: system-ui, -apple-system, sans-serif; }
+    .navbar-brand-custom { background-color: var(--primary-color); color: white; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .card-metric { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; margin-bottom: 25px; overflow: hidden; }
+    .card-header-custom { background-color: var(--primary-color); color: white; font-weight: 600; padding: 15px 20px; border-bottom: none; }
+    .table-responsive { max-height: 400px; overflow-y: auto; }
+    .table thead th { position: sticky; top: 0; background-color: #1e293b !important; color: white; z-index: 1; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .loading-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; }
+    .form-select-lg { border-color: #cbd5e1; font-size: 1.1rem; }
+    .form-select-lg:focus { border-color: var(--accent-color); box-shadow: 0 0 0 0.25rem rgba(2, 132, 199, 0.25); }
   </style>
 </head>
 <body>
 
-  <!-- HEADER -->
+  <!-- HEADER MONITORING -->
   <nav class="navbar-brand-custom text-center mb-4">
-    <h2 class="h4 mb-1 fw-bold">🎯 WEB MONITORING KETERCAPAIAN SISWA</h2>
-    <p class="small mb-0 text-muted">Data Sinkron Otomatis dari Spreadsheet via Google API</p>
+    <h2 class="h4 mb-1 fw-bold">🎯 FMDP MONITORING HUB</h2>
+    <p class="small mb-0 text-white-50">Data Ketercapaian Siswa Terintegrasi Spreadsheet & GitHub</p>
   </nav>
 
   <div class="container-fluid px-4">
     
-    <!-- FILTER SISWA -->
-    <div class="card card-metric p-3 mb-4">
+    <!-- PANEL FILTER SISWA -->
+    <div class="card card-metric p-4 mb-4">
       <div class="row align-items-center">
-        <div class="col-md-6 col-12 mb-2 mb-md-0">
-          <label class="form-label fw-bold text-secondary">Silakan Pilih Nama Siswa untuk Memulai Monitoring:</label>
+        <div class="col-md-7 col-12 mb-3 mb-md-0">
+          <label class="form-label fw-bold text-secondary mb-2">Silakan Pilih Nama Siswa untuk Memulai Monitoring:</label>
           <select id="selectSiswa" class="form-select form-select-lg" onchange="filterDataSiswa()" disabled>
-            <option value="">-- Memuat list siswa, mohon tunggu... --</option>
+            <option value="">-- Memuat list nama siswa, mohon tunggu... --</option>
           </select>
         </div>
-        <div class="col-md-6 col-12 text-md-end">
-          <button class="btn btn-outline-dark fw-bold mt-3 mt-md-0" onclick="muatDataUtama()">🔄 Refresh Data Spreadsheet</button>
+        <div class="col-md-5 col-12 text-md-end">
+          <button class="btn btn-outline-dark btn-lg fw-bold px-4" onclick="muatDataUtama()">🔄 Refresh Data Spreadsheet</button>
         </div>
       </div>
     </div>
 
-    <!-- LOADING SCREEN -->
+    <!-- LOADING STATE -->
     <div id="loading" class="loading-overlay">
       <div class="spinner-border text-dark" style="width: 3rem; height: 3rem;" role="status"></div>
-      <p class="text-muted mt-3 fw-medium">Menghubungkan ke API Google Sheets...</p>
+      <p class="text-muted mt-3 fw-medium">Menarik data dari sistem backend Google Sheets...</p>
     </div>
 
-    <!-- UTAMA: MONITORING HUB -->
+    <!-- UTAMA: DASHBOARD MONITORING KETERCAPAIAN -->
     <div id="monitoring-hub" class="d-none">
       <div class="row">
         
-        <!-- TABEL 1: Daily Activity (DAR) -->
+        <!-- CARD 1: Daily Activity (DAR) -->
         <div class="col-xl-6 col-12">
           <div class="card card-metric">
-            <div class="card-header card-header-custom py-3">📋 Ketercapaian Daily Activity (DAR)</div>
+            <div class="card-header card-header-custom">📋 Ketercapaian Daily Activity (DAR)</div>
             <div class="card-body p-0 table-responsive">
               <table class="table table-striped table-hover mb-0 align-middle">
-                <thead class="table-secondary" id="th-daily"><tr><th>Memuat...</th></tr></thead>
-                <tbody id="tb-daily"><tr><td class="text-muted p-3">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
+                <thead id="th-daily"><tr><th>Memuat...</th></tr></thead>
+                <tbody id="tb-daily"><tr><td class="text-muted p-4">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- TABEL 2: Technical Analysis (TAR) -->
+        <!-- CARD 2: Technical Analysis (TAR) -->
         <div class="col-xl-6 col-12">
           <div class="card card-metric">
-            <div class="card-header card-header-custom py-3">📊 Technical Analysis (TAR)</div>
+            <div class="card-header card-header-custom">📊 Technical Analysis (TAR)</div>
             <div class="card-body p-0 table-responsive">
               <table class="table table-striped table-hover mb-0 align-middle">
-                <thead class="table-secondary" id="th-tech"><tr><th>Memuat...</th></tr></thead>
-                <tbody id="tb-tech"><tr><td class="text-muted p-3">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
+                <thead id="th-tech"><tr><th>Memuat...</th></tr></thead>
+                <tbody id="tb-tech"><tr><td class="text-muted p-4">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- TABEL 3: History Mentoring -->
+        <!-- CARD 3: History Mentoring -->
         <div class="col-xl-6 col-12">
           <div class="card card-metric">
-            <div class="card-header card-header-custom py-3">🤝 History Mentoring</div>
+            <div class="card-header card-header-custom">🤝 History Mentoring</div>
             <div class="card-body p-0 table-responsive">
               <table class="table table-striped table-hover mb-0 align-middle">
-                <thead class="table-secondary" id="th-mentoring"><tr><th>Memuat...</th></tr></thead>
-                <tbody id="tb-mentoring"><tr><td class="text-muted p-3">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
+                <thead id="th-mentoring"><tr><th>Memuat...</th></tr></thead>
+                <tbody id="tb-mentoring"><tr><td class="text-muted p-4">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- TABEL 4: History Training -->
+        <!-- CARD 4: History Training -->
         <div class="col-xl-6 col-12">
           <div class="card card-metric">
-            <div class="card-header card-header-custom py-3">💡 History Training</div>
+            <div class="card-header card-header-custom">💡 History Training</div>
             <div class="card-body p-0 table-responsive">
               <table class="table table-striped table-hover mb-0 align-middle">
-                <thead class="table-secondary" id="th-training"><tr><th>Memuat...</th></tr></thead>
-                <tbody id="tb-training"><tr><td class="text-muted p-3">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
+                <thead id="th-training"><tr><th>Memuat...</th></tr></thead>
+                <tbody id="tb-training"><tr><td class="text-muted p-4">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -106,7 +115,7 @@
   </div>
 
   <script>
-    // URL Web App Google Apps Script kamu sudah terpasang di sini
+    // URL Web App Google Apps Script kamu
     const API_URL = "https://script.google.com/macros/s/AKfycbxVFhACqCKO5NzpidVHc1oLtA_ku_WGxpea-fKH9uWv3HqZqFfm85lkI286JNycFTb0/exec";
     
     let MASTER_DATA = {};
@@ -142,10 +151,13 @@
       select.innerHTML = '<option value="">-- Pilih Nama Siswa --</option>';
       
       if(users.length === 0) return;
-      const namaKolomKunci = Object.keys(users[0])[0]; 
+      
+      // SOLUSI: Secara spesifik mencari properti/kolom bernama 'Nama' agar bukan NRP yang keluar di dropdown
+      const semuaKolom = Object.keys(users[0]);
+      const kolomNama = semuaKolom.find(k => k.toLowerCase() === 'nama' || k.toLowerCase() === 'nama siswa') || semuaKolom[0];
 
       users.forEach(user => {
-        const namaSiswa = user[namaKolomKunci];
+        const namaSiswa = user[kolomNama];
         if(namaSiswa) {
           select.innerHTML += `<option value="${namaSiswa}">${namaSiswa}</option>`;
         }
@@ -177,6 +189,7 @@
         return;
       }
 
+      // Filter & Render masing-masing tabel menggunakan nama siswa terpilih
       prosesFilterDanRender('tb-daily', MASTER_DATA.DailyActivity, namaTerpilih);
       prosesFilterDanRender('tb-tech', MASTER_DATA.TechnicalAnalysis, namaTerpilih);
       prosesFilterDanRender('tb-mentoring', MASTER_DATA.Mentoring, namaTerpilih);
@@ -188,22 +201,34 @@
       tbody.innerHTML = "";
 
       if(objekTab.rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="100%" class="text-center p-3 text-muted">Belum ada riwayat data di tab ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="100%" class="text-center p-4 text-muted">Belum ada riwayat data di tab ini.</td></tr>`;
         return;
       }
 
-      const keyNama = Object.keys(objekTab.rows[0]).find(k => k.toLowerCase().includes('nama') || k.toLowerCase().includes('user')) || Object.keys(objekTab.rows[0])[0];
-      const dataTersaring = objekTab.rows.filter(row => row[keyNama] == namaSiswa);
+      // SOLUSI MULTI-KOLOM: Mendeteksi dinamis nama kolom relasi (bisa 'Nama', 'Nama Analyst', atau 'Nama Karyawan')
+      const semuaKolom = Object.keys(objekTab.rows[0]);
+      const keyNama = semuaKolom.find(k => 
+        k.toLowerCase() === 'nama' || 
+        k.toLowerCase() === 'nama analyst' || 
+        k.toLowerCase() === 'nama karyawan' ||
+        k.toLowerCase().includes('nama')
+      ) || semuaKolom[0];
+
+      // Memfilter baris data yang nilai nama kolomnya COCOK dengan nama siswa terpilih di dropdown
+      const dataTersaring = objekTab.rows.filter(row => {
+        if (!row[keyNama]) return false;
+        return row[keyNama].toString().trim().toLowerCase() === namaSiswa.toString().trim().toLowerCase();
+      });
 
       if(dataTersaring.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="100%" class="text-center p-3 text-muted">Tidak ada rekaman data untuk siswa ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="100%" class="text-center p-4 text-muted">Tidak ada rekaman data untuk siswa ini.</td></tr>`;
         return;
       }
 
       dataTersaring.forEach(row => {
         let htmlRow = "<tr>";
         objekTab.headers.forEach(h => {
-          htmlRow += `<td class="p-3 small">${row[h] !== undefined ? row[h] : '-'}</td>`;
+          htmlRow += `<td class="p-3 small text-nowrap">${row[h] !== undefined ? row[h] : '-'}</td>`;
         });
         htmlRow += "</tr>";
         tbody.innerHTML += htmlRow;
@@ -213,7 +238,7 @@
     function kosongkanSemuaTabel(pesan) {
       const tbi = ['tb-daily', 'tb-tech', 'tb-mentoring', 'tb-training'];
       tbi.forEach(id => {
-        document.getElementById(id).innerHTML = `<tr><td class="text-muted p-3">${pesan}</td></tr>`;
+        document.getElementById(id).innerHTML = `<tr><td class="text-muted p-4">${pesan}</td></tr>`;
       });
     }
   </script>
