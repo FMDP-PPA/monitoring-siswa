@@ -11,6 +11,7 @@
       --ppa-red: #dc2626;  
       --bg-light: #f8fafc;
       --accent-blue: #0284c7;
+      --success-green: #10b981;
     }
     body { background-color: var(--bg-light); font-family: system-ui, -apple-system, sans-serif; }
     
@@ -38,8 +39,8 @@
     .progress-box { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px; }
     .circular-progress {
       position: relative;
-      width: 110px;
-      height: 110px;
+      width: 120px;
+      height: 120px;
       border-radius: 50%;
       background: conic-gradient(var(--ppa-red) 0deg, #e2e8f0 0deg);
       display: flex;
@@ -52,14 +53,33 @@
     .circular-progress::before {
       content: "";
       position: absolute;
-      width: 90px;
-      height: 90px;
+      width: 98px;
+      height: 98px;
       border-radius: 50%;
       background-color: white;
     }
-    .progress-value { position: relative; font-weight: 700; font-size: 1.2rem; color: var(--ppa-navy); }
-    .progress-title { font-size: 0.85rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 2px; }
-    .progress-subtitle { font-size: 0.75rem; color: #94a3b8; }
+    .progress-value { position: relative; font-weight: 700; font-size: 1.3rem; color: var(--ppa-navy); }
+    .progress-title { font-size: 0.9rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 2px; }
+    .progress-subtitle { font-size: 0.8rem; color: #94a3b8; }
+
+    /* --- STYLING KALENDER ABSENSI --- */
+    .calendar-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 10px; margin-top: 15px; }
+    .calendar-day { 
+      border: 1px solid #e2e8f0; 
+      border-radius: 8px; 
+      padding: 10px 5px; 
+      text-align: center; 
+      background-color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .calendar-day.completed { background-color: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+    .calendar-day .day-num { font-weight: 700; font-size: 1rem; }
+    .calendar-day .day-status { font-size: 0.7rem; font-weight: 600; margin-top: 2px; }
+    .calendar-day .badge-check { color: var(--success-green); font-size: 1.1rem; font-weight: bold; }
 
     .table-responsive { max-height: 450px; overflow-y: auto; }
     .table thead th { position: sticky; top: 0; background-color: #1e293b !important; color: white; z-index: 1; font-size: 0.85rem; text-transform: uppercase; white-space: nowrap; }
@@ -101,13 +121,13 @@
     <!-- UTAMA: MONITORING HUB -->
     <div id="monitoring-hub" class="d-none">
       
-      <!-- SEKSI CIRCULAR PROGRESS BAR -->
+      <!-- SEKSI CIRCULAR PROGRESS BAR (DI ATAS TABEL) -->
       <div class="card card-metric p-4 mb-4">
         <h5 class="fw-bold mb-4 text-secondary" style="border-left: 4px solid var(--ppa-red); padding-left: 10px;">📊 RINGKASAN KETERCAPAIAN BULAN INI</h5>
-        <div class="row row-cols-2 row-cols-md-4 g-4 justify-content-center">
+        <div class="row g-4 justify-content-center mb-4">
           
           <!-- DAR Daily -->
-          <div class="col">
+          <div class="col-md-4 col-6">
             <div class="progress-box">
               <div class="circular-progress" id="progress-dar-daily">
                 <span class="progress-value" id="val-dar-daily">0%</span>
@@ -118,7 +138,7 @@
           </div>
 
           <!-- DAR Monthly -->
-          <div class="col">
+          <div class="col-md-4 col-6">
             <div class="progress-box">
               <div class="circular-progress" id="progress-dar-monthly">
                 <span class="progress-value" id="val-dar-monthly">0%</span>
@@ -129,7 +149,7 @@
           </div>
 
           <!-- TAR Monthly -->
-          <div class="col">
+          <div class="col-md-4 col-6">
             <div class="progress-box">
               <div class="circular-progress" id="progress-tar-monthly">
                 <span class="progress-value" id="val-tar-monthly">0%</span>
@@ -139,18 +159,19 @@
             </div>
           </div>
 
-          <!-- Total Target -->
-          <div class="col">
-            <div class="progress-box">
-              <div class="circular-progress" id="progress-summary">
-                <span class="progress-value" id="val-summary">0%</span>
-              </div>
-              <span class="progress-title">Total Target</span>
-              <span class="progress-subtitle">Kombinasi DAR & TAR</span>
-            </div>
-          </div>
-
         </div>
+
+        <hr class="text-muted opacity-25">
+
+        <!-- SEKSI MONITORING TANGGALAN DAR (TRACKER BANNER) -->
+        <div class="mt-3">
+          <h6 class="fw-bold text-dark mb-1" id="title-kalender">📆 KELENGKAPAN DAR HARIAN (BULAN BERJALAN)</h6>
+          <p class="text-muted small mb-3">Hari bertanda centang (<span class="text-success fw-bold">✓</span>) menandakan siswa telah mengumpulkan minimal total 10 jam DAR.</p>
+          <div class="calendar-container" id="container-kalender">
+            <!-- Isi Tanggal Digenerate dari JS -->
+          </div>
+        </div>
+
       </div>
 
       <!-- SEKSI TABEL VERTIKAL -->
@@ -171,7 +192,7 @@
         <!-- TAR -->
         <div class="col-12">
           <div class="card card-metric">
-            <div class="card-header card-header-custom"> Bars Technical Analysis (TAR)</div>
+            <div class="card-header card-header-custom">📊 Technical Analysis (TAR)</div>
             <div class="card-body p-0 table-responsive">
               <table class="table table-striped table-hover mb-0 align-middle">
                 <thead id="th-tech"><tr><th>Memuat...</th></tr></thead>
@@ -269,25 +290,35 @@
       if(!namaTerpilih) {
         buatHeaderTabelSaja();
         kosongkanSemuaTabel("Silakan pilih siswa terlebih dahulu.");
-        updateCircularProgress(0, 0, 0, 0, 0);
+        updateCircularProgress(0, 0, 0, 0, 0, 0, 0);
+        document.getElementById('container-kalender').innerHTML = '';
         return;
       }
 
+      // Memfilter data spesifik HANYA untuk siswa terpilih
       const dataDAR = prosesFilterDanRender('tb-daily', MASTER_DATA.DailyActivity, namaTerpilih);
       const dataTAR = prosesFilterDanRender('tb-tech', MASTER_DATA.TechnicalAnalysis, namaTerpilih);
       prosesFilterDanRender('tb-mentoring', MASTER_DATA.Mentoring, namaTerpilih);
       prosesFilterDanRender('tb-training', MASTER_DATA.Training, namaTerpilih);
 
+      // Kalkulasi berdasarkan data yang SUDAH TERSARING (bukan data master utuh)
       hitungKalkulasiProgress(dataDAR, dataTAR);
     }
 
-    function hitungKalkulasiProgress(rowsDAR, rowsTAR) {
+    function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
       const hariIni = new Date();
       const tahunSekarang = hariIni.getFullYear();
       const bulanSekarang = hariIni.getMonth(); 
       const tglSekarang = hariIni.getDate();
 
+      const namaBulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      document.getElementById('title-kalender').innerText = `📆 KELENGKAPAN DAR HARIAN (${namaBulan[bulanSekarang].toUpperCase()} ${tahunSekarang})`;
+
       const jumlahHariBulanIni = new Date(tahunSekarang, bulanSekarang + 1, 0).getDate();
+
+      // Buat array pencatat jam per tanggal (index 1 s.d jumlahHariBulanIni)
+      let mapJamPerHari = {};
+      for(let d = 1; d <= jumlahHariBulanIni; d++) { mapJamPerHari[d] = 0; }
 
       let totalJamHariIni = 0;
       let totalJamBulanIni = 0;
@@ -310,7 +341,8 @@
         return null;
       }
 
-      rowsDAR.forEach(row => {
+      // Hitung jam dari data DAR milik siswa terpilih
+      rowsDARSiswa.forEach(row => {
         const keyDurasi = Object.keys(row).find(k => k.toLowerCase().includes('durasi') || k.toLowerCase().includes('jam'));
         const keyTanggal = Object.keys(row).find(k => k.toLowerCase().includes('tanggal'));
         
@@ -321,18 +353,29 @@
         if (dataTgl) {
           if (dataTgl.bulan === bulanSekarang && dataTgl.tahun === tahunSekarang) {
             totalJamBulanIni += durasi;
-            if (dataTgl.hari === tglSekarang) { totalJamHariIni += durasi; }
+            
+            // Catat ke map tanggalan kalender
+            if(mapJamPerHari[dataTgl.hari] !== undefined) {
+              mapJamPerHari[dataTgl.hari] += durasi;
+            }
+
+            if (dataTgl.hari === tglSekarang) { 
+              totalJamHariIni += durasi; 
+            }
           }
         }
       });
 
-      rowsTAR.forEach(row => {
+      // Hitung jumlah TAR milik siswa terpilih
+      rowsTARSiswa.forEach(row => {
         const keyTanggal = Object.keys(row).find(k => k.toLowerCase().includes('tanggal') || k.toLowerCase().includes('analisis'));
         let tglRaw = row[keyTanggal] ? row[keyTanggal].toString().trim() : '';
 
         const dataTgl = parsingTanggalGSheets(tglRaw);
         if (dataTgl) {
-          if (dataTgl.bulan === bulanSekarang && dataTgl.tahun === tahunSekarang) { totalTarBulanIni++; }
+          if (dataTgl.bulan === bulanSekarang && dataTgl.tahun === tahunSekarang) { 
+            totalTarBulanIni++; 
+          }
         }
       });
 
@@ -343,25 +386,54 @@
       let pDarDaily = Math.min(Math.round((totalJamHariIni / targetDarDaily) * 100), 100);
       let pDarMonthly = Math.min(Math.round((totalJamBulanIni / targetDarMonthly) * 100), 100);
       let pTarMonthly = Math.min(Math.round((totalTarBulanIni / targetTarMonthly) * 100), 100);
-      let pSummary = Math.round((pDarDaily + pDarMonthly + pTarMonthly) / 3);
 
-      updateCircularProgress(pDarDaily, pDarMonthly, pTarMonthly, pSummary, totalJamHariIni, totalJamBulanIni, targetDarMonthly, totalTarBulanIni);
+      // Perbarui Tampilan Lingkaran
+      updateCircularProgress(pDarDaily, pDarMonthly, pTarMonthly, totalJamHariIni, totalJamBulanIni, targetDarMonthly, totalTarBulanIni);
+
+      // Render Kalender Absensi DAR di bawahnya
+      renderKalenderDAR(jumlahHariBulanIni, mapJamPerHari);
     }
 
-    function updateCircularProgress(pDaily, pMonthly, pTar, pSum, realDaily=0, realMonthly=0, maxMonthly=0, realTar=0) {
+    function updateCircularProgress(pDaily, pMonthly, pTar, realDaily=0, realMonthly=0, maxMonthly=0, realTar=0) {
       document.getElementById('progress-dar-daily').style.background = `conic-gradient(var(--ppa-red) ${pDaily * 3.6}deg, #e2e8f0 0deg)`;
       document.getElementById('progress-dar-monthly').style.background = `conic-gradient(var(--ppa-red) ${pMonthly * 3.6}deg, #e2e8f0 0deg)`;
       document.getElementById('progress-tar-monthly').style.background = `conic-gradient(var(--ppa-red) ${pTar * 3.6}deg, #e2e8f0 0deg)`;
-      document.getElementById('progress-summary').style.background = `conic-gradient(var(--accent-blue) ${pSum * 3.6}deg, #e2e8f0 0deg)`;
 
       document.getElementById('val-dar-daily').innerText = pDaily + "%";
       document.getElementById('val-dar-monthly').innerText = pMonthly + "%";
       document.getElementById('val-tar-monthly').innerText = pTar + "%";
-      document.getElementById('val-summary').innerText = pSum + "%";
 
       document.getElementById('sub-dar-daily').innerText = `${realDaily.toFixed(1)} / 10 Jam`;
       document.getElementById('sub-dar-monthly').innerText = `${realMonthly.toFixed(1)} / ${maxMonthly} Jam`;
       document.getElementById('sub-tar-monthly').innerText = `${realTar} / 2 Analisis`;
+    }
+
+    function renderKalenderDAR(totalHari, mapJam) {
+      const container = document.getElementById('container-kalender');
+      container.innerHTML = '';
+
+      for(let i = 1; i <= totalHari; i++) {
+        let totalJamMasuk = mapJam[i] || 0;
+        let isComplete = totalJamMasuk >= 10;
+        
+        let dayCard = document.createElement('div');
+        dayCard.className = `calendar-day ${isComplete ? 'completed' : ''}`;
+        
+        if(isComplete) {
+          dayCard.innerHTML = `
+            <span class="day-num">${i}</span>
+            <span class="badge-check">✓</span>
+            <span class="day-status text-success">${totalJamMasuk.toFixed(0)} Jm</span>
+          `;
+        } else {
+          dayCard.innerHTML = `
+            <span class="day-num text-secondary">${i}</span>
+            <span class="text-muted" style="font-size:0.9rem;">-</span>
+            <span class="day-status text-muted">${totalJamMasuk > 0 ? totalJamMasuk.toFixed(1) + ' Jm' : '0 Jm'}</span>
+          `;
+        }
+        container.appendChild(dayCard);
+      }
     }
 
     function formatNilaiSel(nilai) {
