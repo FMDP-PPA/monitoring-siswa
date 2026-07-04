@@ -1,4 +1,309 @@
-function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Monitoring Ketercapaian Siswa - FMDP PPA</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --ppa-navy: #0f172a; 
+      --ppa-red: #dc2626;  
+      --bg-light: #f8fafc;
+      --accent-blue: #0284c7;
+      --success-green: #10b981;
+    }
+    body { background-color: var(--bg-light); font-family: system-ui, -apple-system, sans-serif; }
+    
+    .navbar-brand-custom { 
+      background: linear-gradient(135deg, var(--ppa-navy) 70%, var(--ppa-red) 100%);
+      color: white; 
+      padding: 25px 20px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+      border-bottom: 5px solid var(--ppa-red);
+    }
+    
+    .card-metric { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; margin-bottom: 30px; overflow: hidden; }
+    .card-header-custom { 
+      background-color: var(--ppa-navy); 
+      color: white; 
+      font-weight: 700; 
+      padding: 15px 20px; 
+      border-bottom: 3px solid var(--ppa-red); 
+      font-size: 1.1rem;
+    }
+    
+    .btn-ppa-red { background-color: var(--ppa-red); color: white; font-weight: bold; border: none; transition: background 0.2s; }
+    .btn-ppa-red:hover { background-color: #b91c1c; color: white; }
+
+    .progress-box { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px; }
+    .circular-progress {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: conic-gradient(var(--ppa-red) 0deg, #e2e8f0 0deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
+      transition: background 0.3s ease;
+    }
+    .circular-progress::before {
+      content: "";
+      position: absolute;
+      width: 98px;
+      height: 98px;
+      border-radius: 50%;
+      background-color: white;
+    }
+    .progress-value { position: relative; font-weight: 700; font-size: 1.3rem; color: var(--ppa-navy); }
+    .progress-title { font-size: 0.9rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 2px; }
+    .progress-subtitle { font-size: 0.8rem; color: #94a3b8; }
+
+    /* STYLING KALENDER ABSENSI */
+    .calendar-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 10px; margin-top: 15px; }
+    .calendar-day { 
+      border: 1px solid #e2e8f0; 
+      border-radius: 8px; 
+      padding: 10px 5px; 
+      text-align: center; 
+      background-color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .calendar-day.completed { background-color: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+    .calendar-day .day-num { font-weight: 700; font-size: 1rem; }
+    .calendar-day .day-status { font-size: 0.7rem; font-weight: 600; margin-top: 2px; }
+    .calendar-day .badge-check { color: var(--success-green); font-size: 1.1rem; font-weight: bold; }
+
+    .table-responsive { max-height: 450px; overflow-y: auto; }
+    .table thead th { position: sticky; top: 0; background-color: #1e293b !important; color: white; z-index: 1; font-size: 0.85rem; text-transform: uppercase; white-space: nowrap; }
+    .table tbody td { white-space: nowrap; }
+    .loading-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <nav class="navbar-brand-custom text-center mb-4">
+    <h2 class="h3 mb-1 fw-bold">🎯 FMDP MONITORING HUB</h2>
+    <p class="small mb-0 text-white-50 fw-medium">Sistem Pemantauan Ketercapaian Siswa Terintegrasi PPA/PPD</p>
+  </nav>
+
+  <div class="container-fluid px-4">
+    
+    <!-- PANEL FILTER SISWA -->
+    <div class="card card-metric p-4 mb-4">
+      <div class="row align-items-center">
+        <div class="col-md-8 col-12 mb-3 mb-md-0">
+          <label class="form-label fw-bold text-secondary mb-2">Silakan Pilih Nama Siswa untuk Memulai Monitoring:</label>
+          <select id="selectSiswa" class="form-select form-select-lg" onchange="filterDataSiswa()" disabled>
+            <option value="">-- Memuat list nama siswa, mohon tunggu... --</option>
+          </select>
+        </div>
+        <div class="col-md-4 col-12 text-md-end">
+          <button class="btn btn-ppa-red btn-lg px-4 w-100 w-md-auto" onclick="muatDataUtama()">🔄 Refresh Data Spreadsheet</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOADING STATE -->
+    <div id="loading" class="loading-overlay">
+      <div class="spinner-border text-danger" style="width: 3rem; height: 3rem;" role="status"></div>
+      <p class="text-muted mt-3 fw-medium">Menghubungkan ke server data Google Sheets...</p>
+    </div>
+
+    <!-- UTAMA: MONITORING HUB -->
+    <div id="monitoring-hub" class="d-none">
+      
+      <!-- SEKSI CIRCULAR PROGRESS BAR -->
+      <div class="card card-metric p-4 mb-4">
+        <h5 class="fw-bold mb-4 text-secondary" style="border-left: 4px solid var(--ppa-red); padding-left: 10px;">📊 RINGKASAN KETERCAPAIAN BULAN INI</h5>
+        <div class="row g-4 justify-content-center mb-4">
+          
+          <!-- DAR Daily -->
+          <div class="col-md-4 col-6">
+            <div class="progress-box">
+              <div class="circular-progress" id="progress-dar-daily">
+                <span class="progress-value" id="val-dar-daily">0%</span>
+              </div>
+              <span class="progress-title">DAR Daily</span>
+              <span class="progress-subtitle" id="sub-dar-daily">0 / 10 Jam</span>
+            </div>
+          </div>
+
+          <!-- DAR Monthly -->
+          <div class="col-md-4 col-6">
+            <div class="progress-box">
+              <div class="circular-progress" id="progress-dar-monthly">
+                <span class="progress-value" id="val-dar-monthly">0%</span>
+              </div>
+              <span class="progress-title">DAR Monthly</span>
+              <span class="progress-subtitle" id="sub-dar-monthly">0 / 0 Jam</span>
+            </div>
+          </div>
+
+          <!-- TAR Monthly -->
+          <div class="col-md-4 col-6">
+            <div class="progress-box">
+              <div class="circular-progress" id="progress-tar-monthly">
+                <span class="progress-value" id="val-tar-monthly">0%</span>
+              </div>
+              <span class="progress-title">TAR Monthly</span>
+              <span class="progress-subtitle" id="sub-tar-monthly">0 / 2 Analisis</span>
+            </div>
+          </div>
+
+        </div>
+
+        <hr class="text-muted opacity-25">
+
+        <!-- SEKSI MONITORING TANGGALAN DAR -->
+        <div class="mt-3">
+          <h6 class="fw-bold text-dark mb-1" id="title-kalender">📆 KELENGKAPAN DAR HARIAN (BULAN BERJALAN)</h6>
+          <p class="text-muted small mb-3">Hari bertanda centang (<span class="text-success fw-bold">✓</span>) menandakan siswa telah mengumpulkan minimal total 10 jam DAR.</p>
+          <div class="calendar-container" id="container-kalender">
+            <!-- Diisi otomatis dari JavaScript -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SEKSI TABEL VERTIKAL -->
+      <div class="row">
+        <!-- DAR -->
+        <div class="col-12">
+          <div class="card card-metric">
+            <div class="card-header card-header-custom">📋 Ketercapaian Daily Activity (DAR)</div>
+            <div class="card-body p-0 table-responsive">
+              <table class="table table-striped table-hover mb-0 align-middle">
+                <thead id="th-daily"><tr><th>Memuat...</th></tr></thead>
+                <tbody id="tb-daily"><tr><td class="text-muted p-4">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAR -->
+        <div class="col-12">
+          <div class="card card-metric">
+            <div class="card-header card-header-custom">📊 Technical Analysis (TAR)</div>
+            <div class="card-body p-0 table-responsive">
+              <table class="table table-striped table-hover mb-0 align-middle">
+                <thead id="th-tech"><tr><th>Memuat...</th></tr></thead>
+                <tbody id="tb-tech"><tr><td class="text-muted p-4">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MENTORING -->
+        <div class="col-12">
+          <div class="card card-metric">
+            <div class="card-header card-header-custom">🤝 History Mentoring</div>
+            <div class="card-body p-0 table-responsive">
+              <table class="table table-striped table-hover mb-0 align-middle">
+                <thead id="th-mentoring"><tr><th>Memuat...</th></tr></thead>
+                <tbody id="tb-mentoring"><tr><td class="text-muted p-4">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TRAINING -->
+        <div class="col-12">
+          <div class="card card-metric">
+            <div class="card-header card-header-custom">💡 History Training</div>
+            <div class="card-body p-0 table-responsive">
+              <table class="table table-striped table-hover mb-0 align-middle">
+                <thead id="th-training"><tr><th>Memuat...</th></tr></thead>
+                <tbody id="tb-training"><tr><td class="text-muted p-4">Silakan pilih siswa terlebih dahulu.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxVFhACqCKO5NzpidVHc1oLtA_ku_WGxpea-fKH9uWv3HqZqFfm85lkI286JNycFTb0/exec";
+    let MASTER_DATA = {};
+
+    document.addEventListener("DOMContentLoaded", muatDataUtama);
+
+    async function muatDataUtama() {
+      document.getElementById('loading').classList.remove('d-none');
+      document.getElementById('monitoring-hub').classList.add('d-none');
+      try {
+        const response = await fetch(API_URL);
+        const result = await response.json();
+        if(result.status === "success") {
+          MASTER_DATA = result.paketData;
+          isiDropdownSiswa(MASTER_DATA.Users.rows);
+          buatHeaderTabelSaja();
+          document.getElementById('loading').classList.add('d-none');
+          document.getElementById('monitoring-hub').classList.remove('d-none');
+        } else { alert("Gagal menarik data: " + result.message); }
+      } catch (error) {
+        document.getElementById('loading').classList.add('d-none');
+        alert("Koneksi gagal atau terputus: " + error.message);
+      }
+    }
+
+    function isiDropdownSiswa(users) {
+      const select = document.getElementById('selectSiswa');
+      select.innerHTML = '<option value="">-- Pilih Nama Siswa --</option>';
+      if(users.length === 0) return;
+      const semuaKolom = Object.keys(users[0]);
+      const kolomNama = semuaKolom.find(k => k.toLowerCase() === 'nama' || k.toLowerCase() === 'nama siswa') || semuaKolom[0];
+      users.forEach(user => {
+        const namaSiswa = user[kolomNama];
+        if(namaSiswa) { select.innerHTML += `<option value="${namaSiswa}">${namaSiswa}</option>`; }
+      });
+      select.disabled = false;
+    }
+
+    function buatHeaderTabelSaja() {
+      renderHeader('th-daily', MASTER_DATA.DailyActivity.headers);
+      renderHeader('th-tech', MASTER_DATA.TechnicalAnalysis.headers);
+      renderHeader('th-mentoring', MASTER_DATA.Mentoring.headers);
+      renderHeader('th-training', MASTER_DATA.Training.headers);
+    }
+
+    function renderHeader(targetId, headers) {
+      const thead = document.getElementById(targetId);
+      let html = "<tr>";
+      headers.forEach(h => { html += `<th class="p-3 small">${h}</th>`; });
+      html += "</tr>";
+      thead.innerHTML = html;
+    }
+
+    function filterDataSiswa() {
+      const namaTerpilih = document.getElementById('selectSiswa').value;
+      if(!namaTerpilih) {
+        buatHeaderTabelSaja();
+        kosongkanSemuaTabel("Silakan pilih siswa terlebih dahulu.");
+        updateCircularProgress(0, 0, 0, 0, 0, 0, 0);
+        document.getElementById('container-kalender').innerHTML = '';
+        return;
+      }
+
+      const dataDAR = prosesFilterDanRender('tb-daily', MASTER_DATA.DailyActivity, namaTerpilih);
+      const dataTAR = prosesFilterDanRender('tb-tech', MASTER_DATA.TechnicalAnalysis, namaTerpilih);
+      prosesFilterDanRender('tb-mentoring', MASTER_DATA.Mentoring, namaTerpilih);
+      prosesFilterDanRender('tb-training', MASTER_DATA.Training, namaTerpilih);
+
+      hitungKalkulasiProgress(dataDAR, dataTAR);
+    }
+
+    function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
       const hariIni = new Date();
       const tahunSekarang = hariIni.getFullYear();
       const bulanSekarang = hariIni.getMonth(); 
@@ -9,7 +314,6 @@ function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
 
       const jumlahHariBulanIni = new Date(tahunSekarang, bulanSekarang + 1, 0).getDate();
 
-      // Buat array pencatat jam per tanggal
       let mapJamPerHari = {};
       for(let d = 1; d <= jumlahHariBulanIni; d++) { mapJamPerHari[d] = 0; }
 
@@ -17,11 +321,9 @@ function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
       let totalJamBulanIni = 0;
       let totalTarBulanIni = 0;
 
-      // FUNGSI UTAMA PARSING TANGGAL - DIPERKUAT ANTI-1899
       function parsingTanggalGSheets(tglRaw) {
         if (!tglRaw) return null;
 
-        // 1. Jika input sudah berupa objek Date bawaan JavaScript/Google Sheets
         if (tglRaw instanceof Date && !isNaN(tglRaw)) {
           return { hari: tglRaw.getDate(), bulan: tglRaw.getMonth(), tahun: tglRaw.getFullYear() };
         }
@@ -29,12 +331,10 @@ function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
         let tglStr = tglRaw.toString().trim();
         if (tglStr === "" || tglStr.toLowerCase().includes("null") || tglStr.toLowerCase().includes("undefined")) return null;
 
-        // 2. Jika format string ISO standar dari server (contoh: "2026-07-04T07:00:00.000Z" atau "2026-07-04")
         if (tglStr.includes('-')) {
           const bagianKiri = tglStr.split('T')[0];
           const p = bagianKiri.split('-');
           if (p.length === 3) {
-            // Urutan pasti YYYY-MM-DD
             let thn = parseInt(p[0]);
             let bln = parseInt(p[1]) - 1;
             let tgl = parseInt(p[2]);
@@ -42,11 +342,9 @@ function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
           }
         }
 
-        // 3. Jika format string garis miring standar lokal (contoh: "04/07/2026" atau "7/4/2026")
         if (tglStr.includes('/')) {
           const p = tglStr.split('/');
           if (p.length === 3) {
-            // Cek apakah angka pertama Tahun (YYYY/MM/DD) atau Hari (DD/MM/YYYY)
             if (p[0].length === 4) {
               return { hari: parseInt(p[2]), bulan: parseInt(p[1]) - 1, tahun: parseInt(p[0]) };
             } else {
@@ -55,7 +353,6 @@ function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
           }
         }
 
-        // 4. Alternatif terakhir jika dikirim sebagai string timestamp atau format terbaca browser
         let ujiDate = new Date(tglStr);
         if (!isNaN(ujiDate) && ujiDate.getFullYear() > 1900) {
           return { hari: ujiDate.getDate(), bulan: ujiDate.getMonth(), tahun: ujiDate.getFullYear() };
@@ -64,7 +361,6 @@ function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
         return null;
       }
 
-      // Hitung jam dari data DAR milik siswa terpilih
       rowsDARSiswa.forEach(row => {
         const keyDurasi = Object.keys(row).find(k => k.toLowerCase().includes('durasi') || k.toLowerCase().includes('jam'));
         const keyTanggal = Object.keys(row).find(k => k.toLowerCase().includes('tanggal'));
@@ -74,16 +370,13 @@ function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
 
         const dataTgl = parsingTanggalGSheets(tglRaw);
         if (dataTgl) {
-          // Hanya hitung jika masuk bulan dan tahun yang berjalan saat ini
           if (dataTgl.bulan === bulanSekarang && dataTgl.tahun === tahunSekarang) {
             totalJamBulanIni += durasi;
             
-            // Masukkan durasi jam ke tanggal yang sesuai di kalender
             if(mapJamPerHari[dataTgl.hari] !== undefined) {
               mapJamPerHari[dataTgl.hari] += durasi;
             }
 
-            // Jika hari ini, tambahkan ke target harian
             if (dataTgl.hari === tglSekarang) { 
               totalJamHariIni += durasi; 
             }
@@ -91,7 +384,6 @@ function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
         }
       });
 
-      // Hitung jumlah TAR milik siswa terpilih
       rowsTARSiswa.forEach(row => {
         const keyTanggal = Object.keys(row).find(k => k.toLowerCase().includes('tanggal') || k.toLowerCase().includes('analisis'));
         let tglRaw = row[keyTanggal];
@@ -112,9 +404,99 @@ function hitungKalkulasiProgress(rowsDARSiswa, rowsTARSiswa) {
       let pDarMonthly = Math.min(Math.round((totalJamBulanIni / targetDarMonthly) * 100), 100);
       let pTarMonthly = Math.min(Math.round((totalTarBulanIni / targetTarMonthly) * 100), 100);
 
-      // Perbarui Tampilan Lingkaran
       updateCircularProgress(pDarDaily, pDarMonthly, pTarMonthly, totalJamHariIni, totalJamBulanIni, targetDarMonthly, totalTarBulanIni);
-
-      // Render Kalender Absensi DAR di bawahnya
       renderKalenderDAR(jumlahHariBulanIni, mapJamPerHari);
     }
+
+    function updateCircularProgress(pDaily, pMonthly, pTar, realDaily=0, realMonthly=0, maxMonthly=0, realTar=0) {
+      document.getElementById('progress-dar-daily').style.background = `conic-gradient(var(--ppa-red) ${pDaily * 3.6}deg, #e2e8f0 0deg)`;
+      document.getElementById('progress-dar-monthly').style.background = `conic-gradient(var(--ppa-red) ${pMonthly * 3.6}deg, #e2e8f0 0deg)`;
+      document.getElementById('progress-tar-monthly').style.background = `conic-gradient(var(--ppa-red) ${pTar * 3.6}deg, #e2e8f0 0deg)`;
+
+      document.getElementById('val-dar-daily').innerText = pDaily + "%";
+      document.getElementById('val-dar-monthly').innerText = pMonthly + "%";
+      document.getElementById('val-tar-monthly').innerText = pTar + "%";
+
+      document.getElementById('sub-dar-daily').innerText = `${realDaily.toFixed(1)} / 10 Jam`;
+      document.getElementById('sub-dar-monthly').innerText = `${realMonthly.toFixed(1)} / ${maxMonthly} Jam`;
+      document.getElementById('sub-tar-monthly').innerText = `${realTar} / 2 Analisis`;
+    }
+
+    function renderKalenderDAR(totalHari, mapJam) {
+      const container = document.getElementById('container-kalender');
+      container.innerHTML = '';
+
+      for(let i = 1; i <= totalHari; i++) {
+        let totalJamMasuk = mapJam[i] || 0;
+        let isComplete = totalJamMasuk >= 10;
+        
+        let dayCard = document.createElement('div');
+        dayCard.className = `calendar-day ${isComplete ? 'completed' : ''}`;
+        
+        if(isComplete) {
+          dayCard.innerHTML = `
+            <span class="day-num">${i}</span>
+            <span class="badge-check">✓</span>
+            <span class="day-status text-success">${totalJamMasuk.toFixed(0)} Jm</span>
+          `;
+        } else {
+          dayCard.innerHTML = `
+            <span class="day-num text-secondary">${i}</span>
+            <span class="text-muted" style="font-size:0.9rem;">-</span>
+            <span class="day-status text-muted">${totalJamMasuk > 0 ? totalJamMasuk.toFixed(1) + ' Jm' : '0 Jm'}</span>
+          `;
+        }
+        container.appendChild(dayCard);
+      }
+    }
+
+    function formatNilaiSel(nilai) {
+      if (nilai === null || nilai === undefined) return '-';
+      if (typeof nilai === 'object') {
+        if (nilai.date) return new Date(nilai.date).toLocaleDateString('id-ID');
+        return JSON.stringify(nilai);
+      }
+      if (typeof nilai === 'string' && nilai.includes('T') && !isNaN(Date.parse(nilai))) {
+        return new Date(nilai).toLocaleDateString('id-ID');
+      }
+      return nilai;
+    }
+
+    function prosesFilterDanRender(tbodyId, objekTab, namaSiswa) {
+      const tbody = document.getElementById(tbodyId);
+      tbody.innerHTML = "";
+      if(objekTab.rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="100%" class="text-center p-4 text-muted">Belum ada riwayat data di tab ini.</td></tr>`;
+        return [];
+      }
+      const semuaKolom = Object.keys(objekTab.rows[0]);
+      const keyNama = semuaKolom.find(k => k.toLowerCase() === 'nama' || k.toLowerCase() === 'nama analyst' || k.toLowerCase() === 'nama karyawan' || k.toLowerCase().includes('nama')) || semuaKolom[0];
+
+      const dataTersaring = objekTab.rows.filter(row => {
+        if (!row[keyNama]) return false;
+        return row[keyNama].toString().trim().toLowerCase() === namaSiswa.toString().trim().toLowerCase();
+      });
+
+      if(dataTersaring.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="100%" class="text-center p-4 text-muted">Tidak ada rekaman data untuk siswa ini.</td></tr>`;
+        return [];
+      }
+
+      dataTersaring.forEach(row => {
+        let htmlRow = "<tr>";
+        objekTab.headers.forEach(h => { htmlRow += `<td class="p-3 small">${formatNilaiSel(row[h])}</td>`; });
+        htmlRow += "</tr>";
+        tbody.innerHTML += htmlRow;
+      });
+
+      return dataTersaring;
+    }
+
+    function kosongkanSemuaTabel(pesan) {
+      ['tb-daily', 'tb-tech', 'tb-mentoring', 'tb-training'].forEach(id => {
+        document.getElementById(id).innerHTML = `<tr><td class="text-muted p-4">${pesan}</td></tr>`;
+      });
+    }
+  </script>
+</body>
+</html>
