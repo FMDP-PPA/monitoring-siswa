@@ -168,7 +168,7 @@
           <h6 class="fw-bold text-dark mb-1" id="title-kalender">📆 KELENGKAPAN DAR HARIAN (BULAN BERJALAN)</h6>
           <p class="text-muted small mb-3">Hari bertanda centang (<span class="text-success fw-bold">✓</span>) menandakan siswa telah mengumpulkan minimal total 10 jam DAR.</p>
           <div class="calendar-container" id="container-kalender">
-            <!-- Diisi otomatis dari JavaScript -->
+            <!-- Diisi otomatis via JS -->
           </div>
         </div>
 
@@ -325,11 +325,13 @@
         if (!tglRaw) return null;
 
         if (tglRaw instanceof Date && !isNaN(tglRaw)) {
+          // Proteksi: Jika tahun objek bernilai 1899, berarti ini format JAM MURNI dari GSheets, bukan tanggal entri DAR.
+          if (tglRaw.getFullYear() === 1899) return null;
           return { hari: tglRaw.getDate(), bulan: tglRaw.getMonth(), tahun: tglRaw.getFullYear() };
         }
 
         let tglStr = tglRaw.toString().trim();
-        if (tglStr === "" || tglStr.toLowerCase().includes("null") || tglStr.toLowerCase().includes("undefined")) return null;
+        if (tglStr === "" || tglStr.toLowerCase().includes("null") || tglStr.toLowerCase().includes("undefined") || tglStr.includes("1899")) return null;
 
         if (tglStr.includes('-')) {
           const bagianKiri = tglStr.split('T')[0];
@@ -362,7 +364,14 @@
       }
 
       rowsDARSiswa.forEach(row => {
-        const keyDurasi = Object.keys(row).find(k => k.toLowerCase().includes('durasi') || k.toLowerCase().includes('jam'));
+        // PERBAIKAN UTAMA: Mengunci pencarian kolom durasi & memblokir kolom "Jam Mulai / Selesai"
+        const keyDurasi = Object.keys(row).find(k => {
+          const kunci = k.toLowerCase();
+          return (kunci.includes('durasi') || kunci.includes('jam') || kunci.includes('total')) && 
+                 !kunci.includes('mulai') && 
+                 !kunci.includes('selesai');
+        });
+        
         const keyTanggal = Object.keys(row).find(k => k.toLowerCase().includes('tanggal'));
         
         let durasi = parseFloat(row[keyDurasi]) || 0;
@@ -450,12 +459,25 @@
       }
     }
 
+    // PERBAIKAN: Mengubah tampilan 30/12/1899 pada tabel menjadi Jam Digital Menit (HH:mm)
     function formatNilaiSel(nilai) {
       if (nilai === null || nilai === undefined) return '-';
       if (typeof nilai === 'object') {
-        if (nilai.date) return new Date(nilai.date).toLocaleDateString('id-ID');
+        if (nilai.date) {
+          let d = new Date(nilai.date);
+          if (d.getFullYear() === 1899) return d.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+          return d.toLocaleDateString('id-ID');
+        }
         return JSON.stringify(nilai);
       }
+      
+      let tglStr = nilai.toString();
+      if (tglStr.includes('1899')) {
+        let ujiDate = new Date(tglStr);
+        if (!isNaN(ujiDate)) return ujiDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+        return '-';
+      }
+      
       if (typeof nilai === 'string' && nilai.includes('T') && !isNaN(Date.parse(nilai))) {
         return new Date(nilai).toLocaleDateString('id-ID');
       }
