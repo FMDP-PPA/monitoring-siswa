@@ -321,7 +321,7 @@
       let totalJamBulanIni = 0;
       let totalTarBulanIni = 0;
 
-      // 1. RE-STABILISASI PARSING TANGGAL (Mengatasi Isu String Sinkronisasi Tanggal 3)
+      // 1. RE-STABILISASI PARSING TANGGAL KEBAL FORMAT
       function parsingTanggalGSheets(tglRaw) {
         if (!tglRaw) return null;
         if (tglRaw instanceof Date && !isNaN(tglRaw)) {
@@ -337,7 +337,6 @@
             let d1 = parseInt(p[0]);
             let d2 = parseInt(p[1]);
             let d3 = parseInt(p[2]);
-            // Deteksi format YYYY/MM/DD atau DD/MM/YYYY
             if (p[0].length === 4) {
               return { hari: d3, bulan: d2 - 1, tahun: d1 };
             } else {
@@ -361,16 +360,19 @@
         return null;
       }
 
-      // LOOP DATA DAR SISWA (Membaca Durasi Menit Diubah Ke Jam)
+      // 2. LOOP DATA DAR SISWA DENGAN CLEANSING TEKS "MENIT" DAN PENGAMAN SEJAJAR
       rowsDARSiswa.forEach(row => {
-        const keyDurasi = Object.keys(row).find(k => k.toLowerCase().trim() === 'durasi');
-        const keyTanggal = Object.keys(row).find(k => k.toLowerCase().includes('tanggal'));
+        const keyDurasi = Object.keys(row).find(k => k.trim().toUpperCase() === 'DURASI');
+        const keyTanggal = Object.keys(row).find(k => k.trim().toUpperCase() === 'TANGGAL');
         
         let durasiJam = 0;
         if (keyDurasi && row[keyDurasi] !== null && row[keyDurasi] !== undefined) {
-          let nilaiMenit = parseFloat(row[keyDurasi].toString().trim());
+          // Menghapus kata "menit" maupun spasi agar tersisa angka mentah saja
+          let cleanStr = row[keyDurasi].toString().toLowerCase().replace(/menit/g, '').trim();
+          let nilaiMenit = parseFloat(cleanStr);
+          
           if (!isNaN(nilaiMenit) && nilaiMenit > 0) {
-            durasiJam = nilaiMenit / 60; // Konversi MENIT ke JAM
+            durasiJam = nilaiMenit / 60; // Mengubah Menit ke Jam desimal murni
           }
         }
         
@@ -391,7 +393,7 @@
         }
       });
 
-      // LOOP DATA TAR SISWA
+      // 3. LOOP DATA TAR SISWA
       rowsTARSiswa.forEach(row => {
         const keyTanggal = Object.keys(row).find(k => k.toLowerCase().includes('tanggal') || k.toLowerCase().includes('analisis'));
         let tglRaw = row[keyTanggal];
